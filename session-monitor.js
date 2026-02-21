@@ -10,46 +10,16 @@
 
 const fs = require('fs');
 const https = require('https');
+const { inspectToken } = require('./token-manager');
 
 const SESSION_PATH = './session.json';
 const WARN_HOURS = Number(process.env.SESSION_WARN_HOURS || 24);
 const CRIT_HOURS = Number(process.env.SESSION_CRIT_HOURS || 6);
 const DO_PROBE = process.argv.includes('--probe');
 
-function decodeJwtExp(token) {
-  try {
-    const parts = token.split('.');
-    if (parts.length < 2) return null;
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-    return payload.exp || null;
-  } catch {
-    return null;
-  }
-}
-
-function hoursUntil(epochSeconds) {
-  if (!epochSeconds || epochSeconds <= 0) return null;
-  return (epochSeconds - Date.now() / 1000) / 3600;
-}
-
 function fmtHours(h) {
   if (h === null) return 'unknown';
   return `${h.toFixed(1)}h`;
-}
-
-function extractSignalCookies(cookies) {
-  const find = (name) => cookies.find(c => c.name === name);
-
-  const keycloakIdentity = find('KEYCLOAK_IDENTITY');
-  const keycloakSession = find('KEYCLOAK_SESSION');
-  const accessToken = find('access_token_ccr') || find('access_token');
-
-  return {
-    keycloakIdentityExp: keycloakIdentity ? decodeJwtExp(keycloakIdentity.value) : null,
-    keycloakSessionExp: keycloakSession?.expires ? Math.floor(keycloakSession.expires) : null,
-    accessTokenExp: accessToken ? decodeJwtExp(accessToken.value) : null,
-    hasAccessToken: Boolean(accessToken)
-  };
 }
 
 function classify(hoursLeftList) {
@@ -131,11 +101,42 @@ function probeApi(bearerToken) {
   }
 
   const cookies = Array.isArray(session.cookies) ? session.cookies : [];
-  const s = extractSignalCookies(cookies);
+  const inspected = inspectToken();
+  const accessToken = {
+    ...(inspected.accessToken || {}),
+    hoursLeft:
+      inspected.accessToken && inspected.accessToken.hoursLeft !== undefined && inspected.accessToken.hoursLeft !== null
+        ? Number(inspected.accessToken.hoursLeft)
+        : inspected.accessToken && inspected.accessToken.secondsRemaining !== undefined && inspected.accessToken.secondsRemaining !== null
+          ? Number(inspected.accessToken.secondsRemaining) / 3600
+          : null
+  };
+  const hAccess = accessToken.hoursLeft !== null ? Number(accessToken.hoursLeft) : null;
 
-  const hAccess = hoursUntil(s.accessTokenExp);
-  const hIdentity = hoursUntil(s.keycloakIdentityExp);
-  const hSession = hoursUntil(s.keycloakSessionExp);
+  const keycloakIdentityCookie = cookies.find(c => c.name === 'KEYCLOAK_IDENTITY');
+  let hIdentity = null;
+  if (keycloakIdentityCookie?.value) {
+    try {
+      const parts = String(keycloakIdentityCookie.value).split('.');
+      if (parts.length >= 2) {
+        const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+        if (payload?.exp && Number(payload.exp) > 0) {
+          hIdentity = (Number(payload.exp) - Date.now() / 1000) / 3600;
+        }
+      }
+    } catch {
+      hIdentity = null;
+    }
+  }
+
+  const keycloakSessionCookie = cookies.find(c => c.name === 'KEYCLOAK_SESSION');
+  let hSession = null;
+  if (keycloakSessionCookie?.expires) {
+    const sessionExp = Math.floor(Number(keycloakSessionCookie.expires));
+    if (sessionExp > 0) {
+      hSession = (sessionExp - Date.now() / 1000) / 3600;
+    }
+  }
 
   let outcome = classify([hAccess, hIdentity, hSession]);
 
@@ -152,7 +153,7 @@ function probeApi(bearerToken) {
   }
 
   console.log(`[${outcome.level}] ${outcome.reason}`);
-  console.log(`- access_token: ${fmtHours(hAccess)}`);
+  console.log(`- access_token: ${accessToken.hoursLeft !== null ? accessToken.hoursLeft + 'h' : 'unknown'}`);
   console.log(`- KEYCLOAK_IDENTITY: ${fmtHours(hIdentity)}`);
   console.log(`- KEYCLOAK_SESSION: ${fmtHours(hSession)}`);
   console.log(`- probe: ${DO_PROBE ? 'enabled' : 'disabled'}`);
