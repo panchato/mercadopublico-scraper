@@ -1,0 +1,26 @@
+[
+  {
+    "index": 1,
+    "text": "Órdenes de compra \nCompra Ágil\n Contratos Consultas al mercado Grandes compras Trato directo Proveedores Compradores",
+    "hasAmount": false,
+    "hasCode": false
+  },
+  {
+    "index": 2,
+    "text": "Dirección ChileCompra\nMinisterio de Hacienda, Gobierno de Chile\nMonjitas 392 - Piso 8, Santiago de Chile\nTérminos y condiciones",
+    "hasAmount": false,
+    "hasCode": false
+  },
+  {
+    "index": 3,
+    "text": "Sitios relacionados\nRegistro nuevos organismos compradores\nDatos Abiertos ChileCompra\nCapacitación\nCentro de Ayuda",
+    "hasAmount": false,
+    "hasCode": false
+  },
+  {
+    "index": 4,
+    "text": "Mesa de ayuda\n\n600 7000 600\n\n+56 4 4236 0646",
+    "hasAmount": false,
+    "hasCode": true
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh auth status:*)",
+      "Bash(git --version)",
+      "Bash(curl:*)"
+    ]
+  }
+}
