@@ -6,7 +6,6 @@ const { chromium } = require('playwright');
 require('dotenv').config();
 
 const START_URL = 'https://www.mercadopublico.cl';
-const SUCCESS_DOMAIN = 'proveedor.mercadopublico.cl';
 const SESSION_PATH = path.resolve(__dirname, 'session.json');
 const LOCAL_STORAGE_ORIGINS = [
   'https://www.mercadopublico.cl',
@@ -26,24 +25,6 @@ function decodeJwtExp(token) {
 
 function formatAsStorageEntries(input) {
   return Object.entries(input).map(([name, value]) => ({ name, value: String(value) }));
-}
-
-async function waitForProveedorLanding(context, timeoutMs) {
-  const startedAt = Date.now();
-  while (Date.now() - startedAt < timeoutMs) {
-    const matchingPage = context.pages().find((page) => {
-      try {
-        return page.url().includes(SUCCESS_DOMAIN);
-      } catch {
-        return false;
-      }
-    });
-
-    if (matchingPage) return matchingPage;
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
-
-  throw new Error(`Timed out waiting for login completion on ${SUCCESS_DOMAIN}.`);
 }
 
 async function collectLocalStorageByOrigin(context, origin) {
@@ -101,9 +82,9 @@ async function main() {
   console.log('Complete login + 2FA in the browser window.');
 
   await page.goto(START_URL, { waitUntil: 'domcontentloaded' });
-  await waitForProveedorLanding(context, 20 * 60 * 1000);
+  await page.waitForURL(/mercadopublico\.cl\/Portal/, { timeout: 120_000 });
 
-  console.log(`✅ Login completed (landed on ${SUCCESS_DOMAIN}).`);
+  console.log('✅ Login completed (landed on Mercado Publico portal).');
 
   if (captured.refreshToken) {
     const nowEpochSeconds = Math.floor(Date.now() / 1000);
