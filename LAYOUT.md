@@ -1,4 +1,4 @@
-# Runtime Layout
+# Runtime Layout - local PC only
 
 Minimal root runtime files:
 - scraper-final.js
