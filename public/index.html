@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mercado Publico Scraper</title>
+  <style>
+    :root {
+      --bg: #1a1a2e;
+      --card: #16213e;
+      --accent: #0f3460;
+      --highlight: #e94560;
+      --text: #eaeaea;
+      --muted: #9fa8c3;
+      --green: #2ecc71;
+      --yellow: #f1c40f;
+      --red: #e74c3c;
+      --border: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(180deg, var(--bg) 0%, #101020 100%);
+      color: var(--text);
+    }
+
+    .container {
+      width: min(1000px, 94vw);
+      margin: 24px auto 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin: 0 0 16px;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 1.15rem;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 10px 0;
+      flex-wrap: wrap;
+    }
+
+    .status-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.98rem;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+    }
+
+    .dot.green { background: var(--green); }
+    .dot.yellow { background: var(--yellow); }
+    .dot.red { background: var(--red); }
+
+    .banner {
+      margin-top: 12px;
+      background: rgba(231, 76, 60, 0.2);
+      border: 1px solid rgba(231, 76, 60, 0.5);
+      color: #ffd5d0;
+      padding: 10px 12px;
+      border-radius: 10px;
+      display: none;
+    }
+
+    .btn {
+      background: var(--accent);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: #12467f;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .controls {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      margin-bottom: 12px;
+    }
+
+    .control {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .control label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.92rem;
+      gap: 10px;
+    }
+
+    .control input[type="number"],
+    .control input[type="range"] {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .range-value {
+      color: var(--highlight);
+      font-weight: 700;
+    }
+
+    .log-box {
+      background: #0c1022;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      min-height: 220px;
+      max-height: 360px;
+      overflow-y: auto;
+      padding: 10px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }
+
+    .log-line {
+      margin: 0 0 4px;
+    }
+
+    .log-line.system {
+      color: #8bd3ff;
+    }
+
+    .log-line.error {
+      color: #ff9aa2;
+    }
+
+    .run-status {
+      margin: 8px 0 10px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 9px 8px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #30475e;
+      color: #dce6ff;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .badge.summary {
+      background: #415a77;
+    }
+
+    .badge.enriched {
+      background: rgba(233, 69, 96, 0.25);
+      border-color: rgba(233, 69, 96, 0.7);
+      color: #ffd6dd;
+    }
+
+    a.file-link {
+      color: #8dd6ff;
+      text-decoration: none;
+    }
+
+    a.file-link:hover {
+      text-decoration: underline;
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 14px 4px 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Mercado Publico Scraper Dashboard</h1>
+
+    <section class="card">
+      <h2>Session Status</h2>
+      <div class="row">
+        <div class="status-line">
+          <span id="accessDot" class="dot yellow"></span>
+          <span id="accessText">Access Token: checking...</span>
+        </div>
+        <button id="refreshStatusBtn" class="btn" type="button">Refresh status</button>
+      </div>
+      <div class="status-line">
+        <span id="refreshDot" class="dot yellow"></span>
+        <span id="refreshText">Refresh Token: checking...</span>
+      </div>
+      <div id="expiredBanner" class="banner">
+        Session expired - run node login-local.js in your terminal to re-authenticate
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Run Scraper</h2>
+      <div class="controls">
+        <div class="control">
+          <label>
+            <span>Región Metropolitana</span>
+            <input id="regionToggle" type="checkbox" checked>
+          </label>
+        </div>
+        <div class="control">
+          <label>
+            <span>Mis Rubros</span>
+            <input id="rubrosToggle" type="checkbox" checked>
+          </label>
+        </div>
+        <div class="control">
+          <label for="daysSlider">
+            <span>Days back</span>
+            <span class="range-value" id="daysValue">7</span>
+          </label>
+          <input id="daysSlider" type="range" min="1" max="90" value="7">
+        </div>
+        <div class="control">
+          <label for="pagesInput">Max pages</label>
+          <input id="pagesInput" type="number" min="1" max="50" value="10">
+        </div>
+        <div class="control">
+          <label>
+            <span>Enrich opportunities</span>
+            <input id="enrichToggle" type="checkbox">
+          </label>
+        </div>
+      </div>
+      <button id="runBtn" class="btn" type="button">Run</button>
+      <div id="runStatus" class="run-status">Idle</div>
+      <div id="logBox" class="log-box" aria-live="polite"></div>
+    </section>
+
+    <section class="card">
+      <h2>Output Files</h2>
+      <div id="resultsContainer">
+        <table id="resultsTable">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Filename</th>
+              <th>Size</th>
+              <th>Modified</th>
+              <th>Download</th>
+            </tr>
+          </thead>
+          <tbody id="filesBody"></tbody>
+        </table>
+        <div id="emptyState" class="empty" style="display: none;">
+          No output files yet - run the scraper to generate results
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const accessDot = document.getElementById('accessDot');
+    const refreshDot = document.getElementById('refreshDot');
+    const accessText = document.getElementById('accessText');
+    const refreshText = document.getElementById('refreshText');
+    const expiredBanner = document.getElementById('expiredBanner');
+    const refreshStatusBtn = document.getElementById('refreshStatusBtn');
+
+    const daysSlider = document.getElementById('daysSlider');
+    const daysValue = document.getElementById('daysValue');
+    const pagesInput = document.getElementById('pagesInput');
+    const runBtn = document.getElementById('runBtn');
+    const runStatus = document.getElementById('runStatus');
+    const logBox = document.getElementById('logBox');
+
+    const regionToggle = document.getElementById('regionToggle');
+    const rubrosToggle = document.getElementById('rubrosToggle');
+    const enrichToggle = document.getElementById('enrichToggle');
+
+    const filesBody = document.getElementById('filesBody');
+    const emptyState = document.getElementById('emptyState');
+    const resultsTable = document.getElementById('resultsTable');
+
+    let currentSource = null;
+    let runInProgress = false;
+
+    function setDot(dotEl, level) {
+      dotEl.classList.remove('green', 'yellow', 'red');
+      dotEl.classList.add(level);
+    }
+
+    function tokenLevel(token) {
+      if (!token || token.present !== true) return 'red';
+      if (token.isExpired) return 'red';
+      if (token.isExpiringSoon) return 'yellow';
+      return 'green';
+    }
+
+    function formatHours(hoursLeft) {
+      if (hoursLeft === null || hoursLeft === undefined || hoursLeft === '') return 'unknown';
+      return `${hoursLeft}h`;
+    }
+
+    function appendLog(message, kind) {
+      const line = document.createElement('div');
+      line.className = `log-line${kind ? ` ${kind}` : ''}`;
+      line.textContent = message;
+      logBox.appendChild(line);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function clearLog() {
+      logBox.innerHTML = '';
+    }
+
+    function setRunState(running) {
+      runInProgress = running;
+      runBtn.disabled = running;
+    }
+
+    async function loadAuthStatus() {
+      try {
+        const res = await fetch('/api/auth/status');
+        const data = await res.json();
+
+        const access = data.accessToken || {};
+        const refresh = data.refreshToken || {};
+
+        setDot(accessDot, tokenLevel(access));
+        accessText.textContent = `Access Token: ${formatHours(access.hoursLeft)} remaining`;
+
+        const refreshLevel = refresh.present ? tokenLevel(refresh) : 'yellow';
+        setDot(refreshDot, refreshLevel);
+        refreshText.textContent = refresh.present
+          ? `Refresh Token: ${formatHours(refresh.hoursLeft)} remaining`
+          : 'Refresh Token: not present';
+
+        expiredBanner.style.display = access.isExpired ? 'block' : 'none';
+      } catch (error) {
+        setDot(accessDot, 'red');
+        setDot(refreshDot, 'red');
+        accessText.textContent = 'Access Token: failed to check status';
+        refreshText.textContent = 'Refresh Token: failed to check status';
+      }
+    }
+
+    function buildRunQuery() {
+      const params = new URLSearchParams();
+      params.set('region', regionToggle.checked ? 'true' : 'false');
+      params.set('misRubros', rubrosToggle.checked ? 'true' : 'false');
+      params.set('days', String(daysSlider.value));
+      params.set('pages', String(pagesInput.value || 10));
+      params.set('enrich', enrichToggle.checked ? 'true' : 'false');
+      return params.toString();
+    }
+
+    function finishRun(success, message) {
+      setRunState(false);
+      runStatus.textContent = message;
+      appendLog(success ? '✅ Run complete' : '❌ Run failed', success ? 'system' : 'error');
+      if (currentSource) {
+        currentSource.close();
+        currentSource = null;
+      }
+      loadFiles();
+      loadAuthStatus();
+    }
+
+    function startRun() {
+      if (runInProgress) return;
+
+      clearLog();
+      setRunState(true);
+      runStatus.textContent = 'Running...';
+
+      const query = buildRunQuery();
+      currentSource = new EventSource(`/api/scrape/run?${query}`);
+
+      currentSource.onmessage = (event) => {
+        const text = event.data || '';
+        if (text === '__DONE__') {
+          finishRun(true, 'Run completed successfully');
+          return;
+        }
+        if (text.startsWith('__ERROR__:')) {
+          const message = text.replace('__ERROR__:', '').trim();
+          appendLog(message, 'error');
+          finishRun(false, 'Run failed');
+          return;
+        }
+        appendLog(text);
+      };
+
+      currentSource.onerror = () => {
+        if (!runInProgress) return;
+        finishRun(false, 'Connection lost during run');
+      };
+    }
+
+    function bytesToDisplay(bytes) {
+      if (!Number.isFinite(bytes)) return '-';
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    function renderFiles(files) {
+      filesBody.innerHTML = '';
+
+      if (!Array.isArray(files) || files.length === 0) {
+        resultsTable.style.display = 'none';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      resultsTable.style.display = 'table';
+      emptyState.style.display = 'none';
+
+      for (const file of files) {
+        const tr = document.createElement('tr');
+
+        const typeTd = document.createElement('td');
+        const badge = document.createElement('span');
+        badge.className = `badge ${file.type}`;
+        badge.textContent = file.type;
+        typeTd.appendChild(badge);
+
+        const nameTd = document.createElement('td');
+        nameTd.textContent = file.filename;
+
+        const sizeTd = document.createElement('td');
+        sizeTd.textContent = bytesToDisplay(file.size);
+
+        const modifiedTd = document.createElement('td');
+        modifiedTd.textContent = new Date(file.modified).toLocaleString();
+
+        const dlTd = document.createElement('td');
+        const link = document.createElement('a');
+        link.className = 'file-link';
+        link.href = `/api/results/file/${encodeURIComponent(file.filename)}`;
+        link.setAttribute('download', file.filename);
+        link.textContent = 'Download';
+        dlTd.appendChild(link);
+
+        tr.append(typeTd, nameTd, sizeTd, modifiedTd, dlTd);
+        filesBody.appendChild(tr);
+      }
+    }
+
+    async function loadFiles() {
+      try {
+        const res = await fetch('/api/results/files');
+        const files = await res.json();
+        renderFiles(files);
+      } catch (error) {
+        renderFiles([]);
+      }
+    }
+
+    daysSlider.addEventListener('input', () => {
+      daysValue.textContent = daysSlider.value;
+    });
+
+    refreshStatusBtn.addEventListener('click', loadAuthStatus);
+    runBtn.addEventListener('click', startRun);
+
+    loadAuthStatus();
+    loadFiles();
+  </script>
+</body>
+</html>
