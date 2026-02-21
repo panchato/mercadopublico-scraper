@@ -181,6 +181,54 @@ app.get('/api/results/file/:filename', async (req, res) => {
   }
 });
 
+app.get('/api/opportunities/latest', async (req, res) => {
+  const enrichedPattern = /^compra-agil-enriched-.*\.json$/;
+  const fullPattern = /^compra-agil-region13-misrubros-.*\.json$/;
+
+  try {
+    const entries = await fs.promises.readdir(ROOT_DIR, { withFileTypes: true });
+    const allFiles = entries.filter((entry) => entry.isFile()).map((entry) => entry.name);
+
+    let candidateFiles = allFiles.filter((name) => enrichedPattern.test(name));
+    if (candidateFiles.length === 0) {
+      candidateFiles = allFiles.filter((name) => fullPattern.test(name));
+    }
+
+    if (candidateFiles.length === 0) {
+      res.json({ opportunities: [], source: null });
+      return;
+    }
+
+    const filesWithStats = await Promise.all(
+      candidateFiles.map(async (filename) => {
+        const stat = await fs.promises.stat(path.join(ROOT_DIR, filename));
+        return { filename, modifiedMs: stat.mtimeMs };
+      })
+    );
+
+    filesWithStats.sort((a, b) => b.modifiedMs - a.modifiedMs);
+    const latestFilename = filesWithStats[0].filename;
+    const raw = await fs.promises.readFile(path.join(ROOT_DIR, latestFilename), 'utf8');
+    const parsed = JSON.parse(raw);
+    const opportunities = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed?.opportunities)
+        ? parsed.opportunities
+        : [];
+
+    res.json({
+      opportunities,
+      source: latestFilename
+    });
+  } catch (error) {
+    res.status(500).json({
+      opportunities: [],
+      source: null,
+      error: `Failed to load latest opportunities: ${error.message}`
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Web UI server running at http://localhost:${PORT}`);
 });
