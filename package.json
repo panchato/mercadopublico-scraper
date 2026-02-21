@@ -2,13 +2,11 @@
   "name": "mercadopublico-scraper",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "scraper-final.js",
   "scripts": {
     "scrape": "node scraper-final.js --region-metropolitana --mis-rubros --days=1",
-    "scrape:legacy": "node _archive/legacy-scripts/scraper-with-session.js",
     "monitor": "node session-monitor.js",
     "monitor:probe": "node session-monitor.js --probe",
-    "inspect": "node inspect-login.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -16,7 +14,9 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "dotenv": "^17.3.0",
+    "dotenv": "^17.3.0"
+  },
+  "devDependencies": {
     "playwright": "^1.58.2"
   }
 }
