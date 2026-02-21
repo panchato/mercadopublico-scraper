@@ -26,7 +26,7 @@ Output files now include full timestamp (`YYYY-MM-DD_HH-mm-ss`) so each run is s
 ## Daily run
 
 ```bash
-cd /home/panchato/.openclaw/workspace/mercadopublico-scraper
+cd /path/to/project
 make run
 ```
 
@@ -69,10 +69,6 @@ ALERT_MODE=critical-only
    node login-local.js
    ```
 2. Complete 2FA
-3. Copy updated session file to VPS:
-   ```bash
-   scp session.json panchato@vps:/home/panchato/.openclaw/workspace/mercadopublico-scraper/
-   ```
 
 ## Security notes
 
