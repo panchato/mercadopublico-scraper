@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oportunidades Compra Ágil</title>
+  <style>
+    :root {
+      --bg: #1a1a2e;
+      --card: #16213e;
+      --accent: #0f3460;
+      --highlight: #e94560;
+      --text: #eaeaea;
+      --muted: #9fa8c3;
+      --red: #e74c3c;
+      --yellow: #f1c40f;
+      --green: #2ecc71;
+      --border: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, var(--bg) 0%, #101020 100%);
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: min(1200px, 95vw);
+      margin: 22px auto 34px;
+    }
+
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 1.75rem;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .btn {
+      background: var(--accent);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text);
+      text-decoration: none;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn:hover {
+      background: #12467f;
+    }
+
+    .search-wrap {
+      margin-bottom: 16px;
+    }
+
+    .search-input {
+      width: 100%;
+      background: #111a36;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 12px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: rgba(233, 69, 96, 0.65);
+      box-shadow: 0 0 0 2px rgba(233, 69, 96, 0.2);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    @media (min-width: 720px) {
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (min-width: 1060px) {
+      .grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.24);
+      transition: transform 0.18s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+    }
+
+    .urgency-bar {
+      height: 4px;
+    }
+
+    .card-main {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .nombre {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 2.6em;
+    }
+
+    .organismo {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .pill-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 0.79rem;
+      white-space: nowrap;
+    }
+
+    .urgency-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 999px;
+      border: 1px solid currentColor;
+      white-space: nowrap;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .codigo {
+      font-family: Consolas, "Courier New", monospace;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 7px;
+      padding: 2px 6px;
+      font-size: 0.73rem;
+      color: var(--muted);
+      max-width: 65%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .toggle {
+      background: transparent;
+      color: #8dd6ff;
+      border: 0;
+      font-size: 0.84rem;
+      cursor: pointer;
+      padding: 4px 0;
+    }
+
+    .toggle:hover {
+      text-decoration: underline;
+    }
+
+    .details-wrap {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.28s ease;
+      border-top: 1px solid transparent;
+    }
+
+    .details-wrap.open {
+      border-top-color: var(--border);
+    }
+
+    .details-inner {
+      padding: 12px;
+      font-size: 0.86rem;
+    }
+
+    .detail-block {
+      margin: 0 0 10px;
+    }
+
+    .detail-label {
+      color: var(--muted);
+      font-weight: 600;
+      margin-right: 6px;
+    }
+
+    .products-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+      font-size: 0.8rem;
+    }
+
+    .products-table th,
+    .products-table td {
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      padding: 6px 4px;
+      vertical-align: top;
+    }
+
+    .products-table th {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .empty-message {
+      text-align: center;
+      color: var(--muted);
+      padding: 42px 10px;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div>
+        <h1>Oportunidades Compra Ágil</h1>
+        <p class="subtitle" id="subtitle">0 oportunidades · fuente: sin datos</p>
+      </div>
+      <a class="btn" href="/">← Panel técnico</a>
+    </header>
+
+    <div class="search-wrap">
+      <input id="searchInput" class="search-input" type="text" placeholder="Buscar por nombre u organismo...">
+    </div>
+
+    <div id="resultsGrid" class="grid"></div>
+    <div id="noResults" class="empty-message hidden">No hay resultados para tu búsqueda</div>
+    <div id="emptyState" class="empty-message hidden">No hay oportunidades disponibles. Ejecuta el scraper desde el panel técnico.</div>
+  </div>
+
+  <script>
+    const subtitleEl = document.getElementById('subtitle');
+    const searchInputEl = document.getElementById('searchInput');
+    const resultsGridEl = document.getElementById('resultsGrid');
+    const noResultsEl = document.getElementById('noResults');
+    const emptyStateEl = document.getElementById('emptyState');
+
+    let allOpportunities = [];
+
+    function parseDate(value) {
+      if (!value) return null;
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function formatDate(value) {
+      const parsed = parseDate(value);
+      if (!parsed) return 'Sin fecha';
+      return parsed.toLocaleDateString('es-CL', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+
+    function formatMoney(value) {
+      const amount = Number(value);
+      if (!Number.isFinite(amount)) return 'CLP 0';
+      return `CLP ${new Intl.NumberFormat('es-CL').format(Math.round(amount))}`;
+    }
+
+    function getUrgency(fechaCierre) {
+      const now = new Date();
+      const closeDate = parseDate(fechaCierre);
+      if (!closeDate) {
+        return { color: '#2ecc71', label: 'Sin fecha' };
+      }
+
+      const diffMs = closeDate.getTime() - now.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const startOfCloseDay = new Date(closeDate.getFullYear(), closeDate.getMonth(), closeDate.getDate()).getTime();
+      const dayDelta = Math.round((startOfCloseDay - startOfToday) / (1000 * 60 * 60 * 24));
+
+      let label;
+      if (dayDelta <= 0) {
+        label = 'HOY';
+      } else if (dayDelta === 1) {
+        label = 'MAÑANA';
+      } else {
+        label = `${dayDelta} días`;
+      }
+
+      if (diffHours <= 24) {
+        return { color: '#e74c3c', label };
+      }
+      if (diffHours <= 72) {
+        return { color: '#f1c40f', label };
+      }
+      return { color: '#2ecc71', label };
+    }
+
+    function getProducts(opportunity) {
+      if (Array.isArray(opportunity?.detalle?.productos)) return opportunity.detalle.productos;
+      if (Array.isArray(opportunity?.productos)) return opportunity.productos;
+      return [];
+    }
+
+    function getInstitution(opportunity) {
+      if (opportunity?.detalle?.institucion) return opportunity.detalle.institucion;
+      if (opportunity?.institucion) return opportunity.institucion;
+      return null;
+    }
+
+    function createProductsSection(products) {
+      if (!products.length) {
+        return '<div class="detail-block">Sin detalle de productos</div>';
+      }
+
+      const rows = products.map((product) => {
+        const nombre = product?.nombre || product?.descripcion || 'Sin nombre';
+        const cantidad = product?.cantidad ?? '-';
+        const unidad = product?.unidad?.nombre || '-';
+        return `
+          <tr>
+            <td>${escapeHtml(String(nombre))}</td>
+            <td>${escapeHtml(String(cantidad))}</td>
+            <td>${escapeHtml(String(unidad))}</td>
+          </tr>
+        `;
+      }).join('');
+
+      return `
+        <table class="products-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Cantidad</th>
+              <th>Unidad</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    function escapeHtml(value) {
+      return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderOpportunityCard(opportunity) {
+      const nombre = opportunity?.nombre || 'Sin nombre';
+      const organismo = opportunity?.organismo || opportunity?.institucion?.empresa || 'Organismo no informado';
+      const fechaCierre = opportunity?.fechaCierre;
+      const urgency = getUrgency(fechaCierre);
+      const codigo = opportunity?.codigo || 'sin-codigo';
+      const montoDisponible = opportunity?.montoDisponible ?? opportunity?.detalle?.montoMoneda ?? opportunity?.montoMoneda ?? 0;
+
+      const descripcion = opportunity?.detalle?.descripcion || opportunity?.descripcion || '';
+      const plazoEntrega = opportunity?.detalle?.plazoEntrega || opportunity?.plazoEntrega || 'No informado';
+      const direccion = opportunity?.detalle?.direccion || opportunity?.direccion || '';
+      const institucion = getInstitution(opportunity);
+      const products = getProducts(opportunity);
+      const institutionLine = institucion
+        ? `${institucion.empresa || 'Sin empresa'}${institucion.rut ? ` (${institucion.rut})` : ''}`
+        : 'No informada';
+
+      const card = document.createElement('article');
+      card.className = 'card';
+      card.dataset.search = `${String(nombre)} ${String(organismo)}`.toLowerCase();
+
+      card.innerHTML = `
+        <div class="urgency-bar" style="background:${urgency.color};"></div>
+        <div class="card-main">
+          <h3 class="nombre" title="${escapeHtml(String(nombre))}">${escapeHtml(String(nombre))}</h3>
+          <p class="organismo">${escapeHtml(String(organismo))}</p>
+          <div class="pill-row">
+            <span class="pill">💰 ${escapeHtml(formatMoney(montoDisponible))}</span>
+            <span class="pill">📅 Cierra: ${escapeHtml(formatDate(fechaCierre))}</span>
+            <span class="urgency-label" style="color:${urgency.color};">${escapeHtml(urgency.label)}</span>
+          </div>
+          <div class="card-footer">
+            <span class="codigo">${escapeHtml(String(codigo))}</span>
+            <button type="button" class="toggle">Ver detalle ▾</button>
+          </div>
+        </div>
+        <div class="details-wrap">
+          <div class="details-inner">
+            ${descripcion ? `<div class="detail-block"><span class="detail-label">Descripción:</span>${escapeHtml(String(descripcion))}</div>` : ''}
+            <div class="detail-block"><span class="detail-label">Plazo de entrega:</span>${escapeHtml(String(plazoEntrega))}</div>
+            ${direccion ? `<div class="detail-block"><span class="detail-label">Dirección:</span>${escapeHtml(String(direccion))}</div>` : ''}
+            <div class="detail-block">
+              <span class="detail-label">Productos:</span>
+              ${createProductsSection(products)}
+            </div>
+            <div class="detail-block"><span class="detail-label">Institución:</span>${escapeHtml(institutionLine)}</div>
+          </div>
+        </div>
+      `;
+
+      const toggleBtn = card.querySelector('.toggle');
+      const detailsWrap = card.querySelector('.details-wrap');
+
+      toggleBtn.addEventListener('click', () => {
+        const isOpen = detailsWrap.classList.toggle('open');
+        if (isOpen) {
+          detailsWrap.style.maxHeight = `${detailsWrap.scrollHeight}px`;
+          toggleBtn.textContent = 'Ver detalle ▴';
+        } else {
+          detailsWrap.style.maxHeight = '0px';
+          toggleBtn.textContent = 'Ver detalle ▾';
+        }
+      });
+
+      return card;
+    }
+
+    function renderCards(opportunities) {
+      resultsGridEl.innerHTML = '';
+      if (!opportunities.length) {
+        noResultsEl.classList.add('hidden');
+        emptyStateEl.classList.remove('hidden');
+        return;
+      }
+
+      emptyStateEl.classList.add('hidden');
+      for (const opportunity of opportunities) {
+        resultsGridEl.appendChild(renderOpportunityCard(opportunity));
+      }
+    }
+
+    function applyFilter() {
+      const term = searchInputEl.value.trim().toLowerCase();
+      const cards = Array.from(resultsGridEl.querySelectorAll('.card'));
+      let visibleCount = 0;
+
+      for (const card of cards) {
+        const matches = !term || card.dataset.search.includes(term);
+        card.style.display = matches ? '' : 'none';
+        if (matches) visibleCount += 1;
+      }
+
+      noResultsEl.classList.toggle('hidden', visibleCount > 0 || cards.length === 0);
+    }
+
+    async function loadOpportunities() {
+      try {
+        const response = await fetch('/api/opportunities/latest');
+        const data = await response.json();
+        const opportunities = Array.isArray(data?.opportunities) ? data.opportunities : [];
+        const source = data?.source || 'sin archivo';
+
+        allOpportunities = opportunities;
+        subtitleEl.textContent = `${opportunities.length} oportunidades · fuente: ${source}`;
+        renderCards(opportunities);
+      } catch (error) {
+        allOpportunities = [];
+        subtitleEl.textContent = '0 oportunidades · fuente: error de carga';
+        renderCards([]);
+      }
+    }
+
+    searchInputEl.addEventListener('input', applyFilter);
+    loadOpportunities();
+  </script>
+</body>
+</html>
