@@ -9,6 +9,7 @@ const fs = require('fs');
 require('dotenv').config();
 
 const { getValidToken, TokenExpiredError } = require('./token-manager');
+const { enrichOpportunities } = require('./enricher');
 
 class CompraAgilScraper {
   constructor() {
@@ -155,7 +156,7 @@ class CompraAgilScraper {
   }
 
   async scrape(options = {}) {
-    const { region = null, misRubros = false, maxPages = 10, daysBack = 7 } = options;
+    const { region = null, misRubros = false, maxPages = 10, daysBack = 7, enrich = false } = options;
 
     console.log('🎯 Compra Ágil Scraper\n');
 
@@ -237,6 +238,17 @@ class CompraAgilScraper {
       fs.writeFileSync(summaryFile, JSON.stringify(summary, null, 2));
       console.log(`📋 Summary: ${summaryFile}\n`);
 
+      if (enrich) {
+        const enriched = await enrichOpportunities(allOpportunities);
+        if (enriched.length === 0) {
+          console.log('ℹ️  No opportunities matched enrichment criteria (closing within 72h, no existing offers)');
+        } else {
+          const enrichedFile = `compra-agil-enriched${regionSuffix}${rubrosSuffix}-${timestamp}.json`;
+          fs.writeFileSync(enrichedFile, JSON.stringify(enriched, null, 2));
+          console.log(`🔬 Enriched: ${enrichedFile} (${enriched.length} opportunities)`);
+        }
+      }
+
       console.log('📋 Top 10 opportunities:\n');
       summary.slice(0, 10).forEach((opp, index) => {
         console.log(`${index + 1}. [${opp.codigo}] ${opp.nombre.substring(0, 70)}...`);
@@ -257,6 +269,7 @@ if (require.main === module) {
   const options = {
     region: args.includes('--region-metropolitana') ? 13 : null,
     misRubros: args.includes('--mis-rubros'),
+    enrich: args.includes('--enrich'),
     maxPages: 10,
     daysBack: 7
   };
