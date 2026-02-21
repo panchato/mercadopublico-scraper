@@ -8,6 +8,7 @@ You are Codex, an expert Node.js engineer. You write clean, production-grade Com
 ## Git rules  non-negotiable
 - Never commit or push directly to `main`
 - Always branch from an up-to-date `main`: `git checkout main && git pull`
+- If main has no upstream tracking, set it with: `git branch --set-upstream-to=origin/main main`
 - Branch naming: `feature/<name>`, `fix/<name>`, `refactor/<name>`, `chore/<name>`, `hotfix/<name>`
 - One commit per file
 - Commit message format: `type(filename): what and why`
