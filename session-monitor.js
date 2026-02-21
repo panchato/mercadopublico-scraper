@@ -82,6 +82,7 @@ function probeApi(bearerToken) {
 
     const url = `https://servicios-compra-agil.mercadopublico.cl/v1/compra-agil-busqueda/buscar?${query}`;
 
+    let settled = false;
     const req = https.get(url, {
       headers: {
         'Accept': 'application/json, text/plain, */*',
@@ -93,12 +94,25 @@ function probeApi(bearerToken) {
       let body = '';
       res.on('data', c => body += c);
       res.on('end', () => {
+        if (settled) return;
+        settled = true;
         const ok = res.statusCode === 200;
         resolve({ ok, status: res.statusCode, error: ok ? null : body.slice(0, 180) });
       });
     });
 
-    req.on('error', (err) => resolve({ ok: false, status: 0, error: err.message }));
+    req.setTimeout(10000, () => {
+      if (settled) return;
+      settled = true;
+      req.destroy();
+      resolve({ ok: false, status: 0, error: 'Request timed out after 10s' });
+    });
+
+    req.on('error', (err) => {
+      if (settled) return;
+      settled = true;
+      resolve({ ok: false, status: 0, error: err.message });
+    });
   });
 }
 

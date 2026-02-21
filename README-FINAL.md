@@ -17,6 +17,7 @@ Use only these files for daily operation:
 - `./` (root): production runtime files only
 - `_archive/legacy-scripts/`: old Playwright/debug scripts
 - `_archive/legacy-docs/`: old docs kept for reference
+- Note: legacy scripts are not present in the current repo - the directory is retained for documentation continuity only.
 - `artifacts/samples-2026-02-12/`: historical sample outputs
 
 Output files now include full timestamp (`YYYY-MM-DD_HH-mm-ss`) so each run is saved separately.

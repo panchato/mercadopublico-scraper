@@ -15,6 +15,8 @@ class CompraAgilScraper {
     this.baseUrl = 'https://servicios-compra-agil.mercadopublico.cl';
     this.endpoint = '/v1/compra-agil-busqueda/buscar';
     this.bearerToken = null;
+    this.requestTimeoutMs = 15000;
+    this.maxAttempts = 3;
   }
 
   async ensureToken() {
@@ -46,6 +48,36 @@ class CompraAgilScraper {
 
     const url = `${this.baseUrl}${this.endpoint}?${queryString}`;
 
+    for (let attempt = 1; attempt <= this.maxAttempts; attempt += 1) {
+      try {
+        return await this.requestOpportunities(url);
+      } catch (error) {
+        if (error instanceof TokenExpiredError) {
+          throw error;
+        }
+
+        if (error.statusCode === 400) {
+          throw error;
+        }
+
+        const isRetryable =
+          error.retryable === true ||
+          (error.statusCode >= 500 && error.statusCode < 600);
+
+        if (!isRetryable || attempt === this.maxAttempts) {
+          throw error;
+        }
+
+        const delaySeconds = 2 ** (attempt - 1);
+        console.log(`   Attempt ${attempt} failed: ${error.message}. Retrying in ${delaySeconds}s...`);
+        await new Promise((resolve) => setTimeout(resolve, delaySeconds * 1000));
+      }
+    }
+
+    throw new Error('Failed to fetch opportunities after retries.');
+  }
+
+  requestOpportunities(url) {
     return new Promise((resolve, reject) => {
       const options = {
         method: 'GET',
@@ -58,32 +90,60 @@ class CompraAgilScraper {
         }
       };
 
-      https
-        .get(url, options, (res) => {
-          let data = '';
-          res.on('data', (chunk) => {
-            data += chunk;
-          });
+      let settled = false;
+      const req = https.get(url, options, (res) => {
+        let data = '';
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
 
-          res.on('end', () => {
-            if (res.statusCode === 200) {
-              try {
-                resolve(JSON.parse(data));
-              } catch (error) {
-                reject(new Error(`Failed to parse JSON: ${error.message}`));
-              }
-              return;
+        res.on('end', () => {
+          if (settled) return;
+          settled = true;
+
+          if (res.statusCode === 200) {
+            try {
+              resolve(JSON.parse(data));
+            } catch (error) {
+              const parseError = new Error(`Failed to parse JSON: ${error.message}`);
+              parseError.retryable = false;
+              reject(parseError);
             }
+            return;
+          }
 
-            if (res.statusCode === 401) {
-              reject(new TokenExpiredError('HTTP 401 from Compra Ágil API. Session refresh failed or expired.'));
-              return;
-            }
+          if (res.statusCode === 401) {
+            reject(new TokenExpiredError('HTTP 401 from Compra Ágil API. Session refresh failed or expired.'));
+            return;
+          }
 
-            reject(new Error(`HTTP ${res.statusCode}: ${data.substring(0, 200)}`));
-          });
-        })
-        .on('error', reject);
+          const httpError = new Error(`HTTP ${res.statusCode}: ${data.substring(0, 200)}`);
+          httpError.statusCode = res.statusCode;
+          httpError.retryable = res.statusCode >= 500 && res.statusCode < 600;
+          reject(httpError);
+        });
+      });
+
+      req.setTimeout(this.requestTimeoutMs, () => {
+        const timeoutError = new Error('Request timed out after 15s');
+        timeoutError.code = 'ETIMEDOUT';
+        timeoutError.retryable = true;
+        req.destroy(timeoutError);
+      });
+
+      req.on('error', (error) => {
+        if (settled) return;
+        settled = true;
+
+        if (error.code === 'ETIMEDOUT' && !error.retryable) {
+          error.retryable = true;
+        }
+        if (error.retryable === undefined) {
+          error.retryable = true;
+        }
+
+        reject(error);
+      });
     });
   }
 
@@ -202,10 +262,28 @@ if (require.main === module) {
   };
 
   const pagesArg = args.find((arg) => arg.startsWith('--pages='));
-  if (pagesArg) options.maxPages = parseInt(pagesArg.split('=')[1], 10);
+  if (pagesArg) {
+    const pagesRaw = pagesArg.split('=')[1];
+    const pagesValue = Number(pagesRaw);
+    const isValidPages = /^\d+$/.test(pagesRaw) && Number.isInteger(pagesValue) && pagesValue >= 1 && pagesValue <= 50;
+    if (!isValidPages) {
+      console.error('--pages must be an integer between 1 and 50');
+      process.exit(1);
+    }
+    options.maxPages = pagesValue;
+  }
 
   const daysArg = args.find((arg) => arg.startsWith('--days='));
-  if (daysArg) options.daysBack = parseInt(daysArg.split('=')[1], 10);
+  if (daysArg) {
+    const daysRaw = daysArg.split('=')[1];
+    const daysValue = Number(daysRaw);
+    const isValidDays = /^\d+$/.test(daysRaw) && Number.isInteger(daysValue) && daysValue >= 1 && daysValue <= 90;
+    if (!isValidDays) {
+      console.error('--days must be an integer between 1 and 90');
+      process.exit(1);
+    }
+    options.daysBack = daysValue;
+  }
 
   const scraper = new CompraAgilScraper();
 
