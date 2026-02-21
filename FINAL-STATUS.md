@@ -31,7 +31,7 @@ Legacy Playwright navigation scripts are kept only for debugging/backups in `_ar
 ## ⚠️ Operational Notes
 
 - Keep `session.json` and `.env` private (sensitive auth material).
-- If session expires (401), re-run `login-local.js` and copy new `session.json` to VPS.
+- If session expires (401), re-run `login-local.js` to generate a fresh local `session.json`.
 - Treat `scraper-with-session.js` as legacy (not production path).
 
 ---
@@ -39,7 +39,7 @@ Legacy Playwright navigation scripts are kept only for debugging/backups in `_ar
 ## 🚀 Recommended Daily Command
 
 ```bash
-cd /home/panchato/.openclaw/workspace/mercadopublico-scraper
+cd /path/to/project
 node scraper-final.js --region-metropolitana --mis-rubros --days=1
 ```
 
