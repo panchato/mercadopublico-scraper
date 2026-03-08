@@ -185,6 +185,13 @@
       gap: 8px;
     }
 
+    .footer-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
     .codigo {
       font-family: Consolas, "Courier New", monospace;
       background: rgba(255, 255, 255, 0.08);
@@ -197,6 +204,26 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    .reliability-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      padding: 3px 8px;
+      white-space: nowrap;
+    }
+
+    .reliability-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
     }
 
     .toggle {
@@ -353,6 +380,13 @@
       return { color: '#2ecc71', label };
     }
 
+    function getReliabilityColor(label) {
+      if (label === 'Muy confiable' || label === 'Confiable') return '#2ecc71';
+      if (label === 'Precaución') return '#f1c40f';
+      if (label === 'Riesgo' || label === 'Evitar') return '#e74c3c';
+      return '#9fa8c3';
+    }
+
     function getProducts(opportunity) {
       if (Array.isArray(opportunity?.detalle?.productos)) return opportunity.detalle.productos;
       if (Array.isArray(opportunity?.productos)) return opportunity.productos;
@@ -413,12 +447,26 @@
       const urgency = getUrgency(fechaCierre);
       const codigo = opportunity?.codigo || 'sin-codigo';
       const montoDisponible = opportunity?.montoDisponible ?? opportunity?.detalle?.montoMoneda ?? opportunity?.montoMoneda ?? 0;
+      const buyerReliability = opportunity?.buyerReliability || null;
+      const reliabilityColor = getReliabilityColor(buyerReliability?.label);
 
       const descripcion = opportunity?.detalle?.descripcion || opportunity?.descripcion || '';
       const plazoEntrega = opportunity?.detalle?.plazoEntrega || opportunity?.plazoEntrega || 'No informado';
       const direccion = opportunity?.detalle?.direccion || opportunity?.direccion || '';
       const institucion = getInstitution(opportunity);
       const products = getProducts(opportunity);
+      const reliabilityPill = buyerReliability
+        ? `🏦 ${buyerReliability.label} (${buyerReliability.ratioPercent} pagos tardíos)`
+        : '';
+      const reliabilityDetail = buyerReliability
+        ? `
+            <div class="detail-block">
+              <span class="detail-label">Confiabilidad del comprador:</span>
+              <div>Reclamos pago no oportuno: ${escapeHtml(new Intl.NumberFormat('es-CL').format(Number(buyerReliability.pagoNoOportuno) || 0))} de ${escapeHtml(new Intl.NumberFormat('es-CL').format(Number(buyerReliability.totalOrdenes) || 0))} órdenes (${escapeHtml(String(buyerReliability.ratioPercent || '0%'))})</div>
+              <div>Puntaje: ${escapeHtml(String(buyerReliability.score || 0))}/25</div>
+            </div>
+          `
+        : '';
       const institutionLine = institucion
         ? `${institucion.empresa || 'Sin empresa'}${institucion.rut ? ` (${institucion.rut})` : ''}`
         : 'No informada';
@@ -436,9 +484,13 @@
             <span class="pill">💰 ${escapeHtml(formatMoney(montoDisponible))}</span>
             <span class="pill">📅 Cierra: ${escapeHtml(formatDate(fechaCierre))}</span>
             <span class="urgency-label" style="color:${urgency.color};">${escapeHtml(urgency.label)}</span>
+            ${buyerReliability ? `<span class="pill">${escapeHtml(reliabilityPill)}</span>` : ''}
           </div>
           <div class="card-footer">
-            <span class="codigo">${escapeHtml(String(codigo))}</span>
+            <div class="footer-meta">
+              <span class="codigo">${escapeHtml(String(codigo))}</span>
+              ${buyerReliability ? `<span class="reliability-badge"><span class="reliability-dot" style="background:${reliabilityColor};"></span>${escapeHtml(String(buyerReliability.label))}</span>` : ''}
+            </div>
             <button type="button" class="toggle">Ver detalle ▾</button>
           </div>
         </div>
@@ -451,6 +503,7 @@
               <span class="detail-label">Productos:</span>
               ${createProductsSection(products)}
             </div>
+            ${reliabilityDetail}
             <div class="detail-block"><span class="detail-label">Institución:</span>${escapeHtml(institutionLine)}</div>
           </div>
         </div>

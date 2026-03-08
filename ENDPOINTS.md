@@ -140,6 +140,30 @@ Other payload fields:
 
 ---
 
+## 8) Buyer Reclamos
+
+- **Method**: `GET`
+- **Base**: `https://comprador-api-pro.mercadopublico.cl`
+- **Path**: `/comprador/reclamos/calculos_reclamos?rut={rut}`
+- **Auth**: Bearer token required
+- **Priority**: **High**
+- **Status**: `integrated`
+- **Key field**: `payload.data[tipoReclamoId===1].cantidadReclamos` -> `pagoNoOportuno`
+
+---
+
+## 9) Buyer Órdenes de Compra
+
+- **Method**: `GET`
+- **Base**: `https://comprador-api-pro.mercadopublico.cl`
+- **Path**: `/comprador/orden_compra/montos?rut={rut}`
+- **Auth**: Bearer token required
+- **Priority**: **High**
+- **Status**: `integrated`
+- **Key field**: `sum(payload.data[*].nro_oc)` -> `totalOrdenes`
+
+---
+
 ## Integration Roadmap (next)
 
 1. Add optional enrichment mode in scraper:
