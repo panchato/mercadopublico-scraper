@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -66,6 +66,13 @@
 
     .page-header h1 {
       margin: 0;
+    }
+
+    .page-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
     .row {
@@ -247,30 +254,33 @@
 <body>
   <div class="container">
     <div class="page-header">
-      <h1>Mercado Publico Scraper Dashboard</h1>
-      <a class="btn" href="/opportunities.html">Ver oportunidades →</a>
+      <h1>Panel de Control - Compra Ágil</h1>
+      <div class="page-actions">
+        <a class="btn" href="/opportunities.html">Ver oportunidades →</a>
+        <a class="btn" href="/GUIA.md" target="_blank">📖 Guía de uso</a>
+      </div>
     </div>
 
     <section class="card">
-      <h2>Session Status</h2>
+      <h2>Estado de Sesión</h2>
       <div class="row">
         <div class="status-line">
           <span id="accessDot" class="dot yellow"></span>
-          <span id="accessText">Access Token: checking...</span>
+          <span id="accessText">Token de Acceso: verificando...</span>
         </div>
-        <button id="refreshStatusBtn" class="btn" type="button">Refresh status</button>
+        <button id="refreshStatusBtn" class="btn" type="button">Actualizar estado</button>
       </div>
       <div class="status-line">
         <span id="refreshDot" class="dot yellow"></span>
-        <span id="refreshText">Refresh Token: checking...</span>
+        <span id="refreshText">Token de Actualización: verificando...</span>
       </div>
       <div id="expiredBanner" class="banner">
-        Session expired - run node login-local.js in your terminal to re-authenticate
+        Sesión expirada - ejecuta node login-local.js en tu terminal para volver a autenticarte
       </div>
     </section>
 
     <section class="card">
-      <h2>Run Scraper</h2>
+      <h2>Ejecutar Scraper</h2>
       <div class="controls">
         <div class="control">
           <label>
@@ -286,44 +296,44 @@
         </div>
         <div class="control">
           <label for="daysSlider">
-            <span>Days back</span>
+            <span>Días hacia atrás</span>
             <span class="range-value" id="daysValue">7</span>
           </label>
           <input id="daysSlider" type="range" min="1" max="90" value="7">
         </div>
         <div class="control">
-          <label for="pagesInput">Max pages</label>
+          <label for="pagesInput">Máximo de páginas</label>
           <input id="pagesInput" type="number" min="1" max="50" value="10">
         </div>
         <div class="control">
           <label>
-            <span>Enrich opportunities</span>
+            <span>Enriquecer oportunidades</span>
             <input id="enrichToggle" type="checkbox">
           </label>
         </div>
       </div>
-      <button id="runBtn" class="btn" type="button">Run</button>
-      <div id="runStatus" class="run-status">Idle</div>
+      <button id="runBtn" class="btn" type="button">Ejecutar</button>
+      <div id="runStatus" class="run-status">En espera</div>
       <div id="logBox" class="log-box" aria-live="polite"></div>
     </section>
 
     <section class="card">
-      <h2>Output Files</h2>
+      <h2>Archivos de Salida</h2>
       <div id="resultsContainer">
         <table id="resultsTable">
           <thead>
             <tr>
-              <th>Type</th>
-              <th>Filename</th>
-              <th>Size</th>
-              <th>Modified</th>
-              <th>Download</th>
+              <th>Tipo</th>
+              <th>Archivo</th>
+              <th>Tamaño</th>
+              <th>Modificado</th>
+              <th>Descargar</th>
             </tr>
           </thead>
           <tbody id="filesBody"></tbody>
         </table>
         <div id="emptyState" class="empty" style="display: none;">
-          No output files yet - run the scraper to generate results
+          Sin archivos aún - ejecuta el scraper para generar resultados
         </div>
       </div>
     </section>
@@ -398,20 +408,20 @@
         const refresh = data.refreshToken || {};
 
         setDot(accessDot, tokenLevel(access));
-        accessText.textContent = `Access Token: ${formatHours(access.hoursLeft)} remaining`;
+        accessText.textContent = `Token de Acceso: ${formatHours(access.hoursLeft)} restantes`;
 
         const refreshLevel = refresh.present ? tokenLevel(refresh) : 'yellow';
         setDot(refreshDot, refreshLevel);
         refreshText.textContent = refresh.present
-          ? `Refresh Token: ${formatHours(refresh.hoursLeft)} remaining`
-          : 'Refresh Token: not present';
+          ? `Token de Actualización: ${formatHours(refresh.hoursLeft)} restantes`
+          : 'Token de Actualización: no disponible';
 
         expiredBanner.style.display = access.isExpired ? 'block' : 'none';
       } catch (error) {
         setDot(accessDot, 'red');
         setDot(refreshDot, 'red');
-        accessText.textContent = 'Access Token: failed to check status';
-        refreshText.textContent = 'Refresh Token: failed to check status';
+        accessText.textContent = 'Token de Acceso: error al verificar';
+        refreshText.textContent = 'Token de Actualización: error al verificar';
       }
     }
 
@@ -428,7 +438,7 @@
     function finishRun(success, message) {
       setRunState(false);
       runStatus.textContent = message;
-      appendLog(success ? '✅ Run complete' : '❌ Run failed', success ? 'system' : 'error');
+      appendLog(success ? '✅ Ejecución completa' : '❌ Ejecución fallida', success ? 'system' : 'error');
       if (currentSource) {
         currentSource.close();
         currentSource = null;
@@ -442,7 +452,7 @@
 
       clearLog();
       setRunState(true);
-      runStatus.textContent = 'Running...';
+      runStatus.textContent = 'Ejecutando...';
 
       const query = buildRunQuery();
       currentSource = new EventSource(`/api/scrape/run?${query}`);
@@ -450,13 +460,13 @@
       currentSource.onmessage = (event) => {
         const text = event.data || '';
         if (text === '__DONE__') {
-          finishRun(true, 'Run completed successfully');
+          finishRun(true, 'Ejecución completada');
           return;
         }
         if (text.startsWith('__ERROR__:')) {
           const message = text.replace('__ERROR__:', '').trim();
           appendLog(message, 'error');
-          finishRun(false, 'Run failed');
+          finishRun(false, 'Ejecución fallida');
           return;
         }
         appendLog(text);
@@ -464,7 +474,7 @@
 
       currentSource.onerror = () => {
         if (!runInProgress) return;
-        finishRun(false, 'Connection lost during run');
+        finishRun(false, 'Conexión perdida durante la ejecución');
       };
     }
 
@@ -510,7 +520,7 @@
         link.className = 'file-link';
         link.href = `/api/results/file/${encodeURIComponent(file.filename)}`;
         link.setAttribute('download', file.filename);
-        link.textContent = 'Download';
+        link.textContent = 'Descargar';
         dlTd.appendChild(link);
 
         tr.append(typeTd, nameTd, sizeTd, modifiedTd, dlTd);
