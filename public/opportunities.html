@@ -548,11 +548,13 @@
     function formatDate(value) {
       const parsed = parseDate(value);
       if (!parsed) return 'Sin fecha';
-      return parsed.toLocaleDateString('es-CL', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
+      const date = parsed.toLocaleDateString('es-CL', {
+        day: '2-digit', month: '2-digit', year: 'numeric'
       });
+      const time = parsed.toLocaleTimeString('es-CL', {
+        hour: '2-digit', minute: '2-digit', hour12: false
+      });
+      return `${date} ${time}`;
     }
 
     function formatMoney(value) {
@@ -675,7 +677,7 @@
       const institucion = getInstitution(opportunity);
       const products = getProducts(opportunity);
       const reliabilityPill = buyerReliability
-        ? `🏦 ${buyerReliability.label} (${buyerReliability.ratioPercent} pagos tardíos)`
+        ? `🏦 ${buyerReliability.label} (${buyerReliability.ratioPercent})`
         : '';
       const reliabilityDetail = buyerReliability
         ? `
