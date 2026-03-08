@@ -1,69 +1,92 @@
-# Mercado Público Scraper
+# Compra Ágil Scraper
 
-A Node.js scraper for Chile's [Compra Ágil](https://compra-agil.mercadopublico.cl) public procurement platform. Runs daily to surface new opportunities filtered by region and product categories.
+Herramienta para monitorear y evaluar oportunidades de compra pública en [Compra Ágil](https://compra-agil.mercadopublico.cl), el sistema de adquisiciones del Estado de Chile.
 
-## What it does
+## ¿Qué hace?
 
-- Authenticates via a saved Keycloak session (`session.json`)
-- Pulls procurement opportunities from the Compra Ágil API
-- Filters by region (Región Metropolitana) and registered product categories
-- Optionally enriches opportunities closing within 72h with no existing offers
-- Outputs full and summary JSON files per run
-- Sends Telegram alerts on session expiry or scrape failure
+- Consulta la API de Compra Ágil y descarga oportunidades filtradas por región y rubros
+- Enriquece cada oportunidad con detalle de productos y score de confiabilidad del comprador
+- Presenta las oportunidades en un panel visual con urgencia por color, filtros y ordenamiento
+- Permite acceder directamente a cada oportunidad en Mercado Público con un clic
 
-## Quick start
-    # Daily run (monitor + scrape + alerts)
-    make run
+## Requisitos
 
-    # Scrape only
-    node scraper-final.js --region-metropolitana --mis-rubros --days=1
+- Node.js 18+
+- Cuenta activa en [Mercado Público](https://www.mercadopublico.cl) como proveedor
 
-    # With enrichment
-    node scraper-final.js --region-metropolitana --mis-rubros --days=1 --enrich
+## Instalación
+```bash
+git clone 
+cd mercadopublico-scraper
+npm install
+```
 
-    # Check session health
-    make monitor
+## Uso en Windows
 
-    # Check session health + live API probe
-    make probe
-
-
-## Re-auth (when session expires)
-    node login-local.js
-
-Complete the 2FA flow in the browser. A fresh `session.json` will be saved automatically.
-
-## Key files
-
-| File | Purpose |
+| Archivo | Acción |
 |---|---|
-| `scraper-final.js` | Main scraper |
-| `token-manager.js` | Token refresh and inspection |
-| `enricher.js` | Detail enrichment for filtered opportunities |
-| `session-monitor.js` | Session health checks |
-| `login-local.js` | 2FA re-auth helper |
-| `run-daily.sh` | Daily orchestration script |
+| `Iniciar.bat` | Inicia el servidor y abre el panel en el navegador |
+| `ReAutenticar.bat` | Re-autenticación con Clave Única (cuando la sesión expira) |
 
-## Configuration
+## Uso por línea de comandos
+```bash
+# Iniciar el panel web
+node server.js
 
-Copy `.env.example` to `.env` and fill in your credentials:
-    MP_USERNAME=your_rut
-    MP_PASSWORD=your_password
-    TELEGRAM_BOT_TOKEN=optional
-    TELEGRAM_CHAT_ID=optional
-    ALERT_MODE=critical-only
+# Ejecutar scraper directamente
+node scraper-final.js --region-metropolitana --mis-rubros --days=1
 
+# Verificar estado de sesión
+node session-monitor.js --probe
 
-## CLI flags
+# Re-autenticar (requiere navegador con interfaz gráfica)
+node login-local.js
+```
 
-| Flag | Description |
+## Arquitectura
+
+| Archivo | Rol |
 |---|---|
-| `--region-metropolitana` | Filter by Región Metropolitana |
-| `--mis-rubros` | Filter by your registered product categories |
-| `--days=N` | Days back to search (1-90, default 7) |
-| `--pages=N` | Max pages to fetch (1-50, default 10) |
-| `--enrich` | Enrich opportunities closing within 72h with no existing offers |
+| `scraper-final.js` | Scraper principal vía API |
+| `enricher.js` | Enriquecimiento de detalle y confiabilidad del comprador |
+| `token-manager.js` | Gestión del ciclo de vida del token de acceso |
+| `session-monitor.js` | Verificación de salud de la sesión |
+| `login-local.js` | Re-autenticación con Playwright (requiere interfaz gráfica) |
+| `server.js` | Servidor Express + API REST |
+| `public/index.html` | Panel de control técnico |
+| `public/opportunities.html` | Panel de evaluación de oportunidades |
 
-## Security
+## Autenticación
 
-Keep `session.json` and `.env` private. Both are gitignored. Never commit real credentials.
+El sistema usa Keycloak SSO vía Clave Única. La sesión se guarda en `session.json` (excluido de git). El token de acceso dura aproximadamente 8 horas.
+
+Cuando expira:
+1. Ejecutar `ReAutenticar.bat` (Windows) o `node login-local.js`
+2. Completar login con Clave Única y 2FA
+3. La sesión se actualiza automáticamente
+
+## Confiabilidad del comprador
+
+| Nivel | Rango |
+|---|---|
+| 🟢 Muy confiable | 02% reclamos |
+| 🟢 Confiable | 25% |
+| 🟡 Precaución | 510% |
+| 🔴 Riesgo | 1020% |
+| 🔴 Evitar | +20% |
+
+El porcentaje corresponde a reclamos por pago no oportuno sobre el total de órdenes de compra del organismo.
+
+## Seguridad
+
+- `session.json` y `.env` están excluidos de git
+- El panel web no tiene autenticación propia  úsalo solo en red local
+- Si el token se expone, rotar sesión con `login-local.js`
+
+## Guía de uso
+
+Ver [GUIA.md](GUIA.md) para instrucciones detalladas para usuarios no técnicos.
+
+## Changelog
+
+Ver [CHANGELOG.md](CHANGELOG.md).
