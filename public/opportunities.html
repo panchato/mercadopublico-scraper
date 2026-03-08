@@ -564,32 +564,38 @@
     function getUrgency(fechaCierre) {
       const now = new Date();
       const closeDate = parseDate(fechaCierre);
+
       if (!closeDate) {
         return { color: '#2ecc71', label: 'Sin fecha' };
       }
 
-      const diffMs = closeDate.getTime() - now.getTime();
-      const diffHours = diffMs / (1000 * 60 * 60);
+      // Reference points
+      const tomorrowNoon = new Date(now);
+      tomorrowNoon.setDate(tomorrowNoon.getDate() + 1);
+      tomorrowNoon.setHours(12, 0, 0, 0);
+
+      const dayAfterTomorrowStart = new Date(now);
+      dayAfterTomorrowStart.setDate(dayAfterTomorrowStart.getDate() + 2);
+      dayAfterTomorrowStart.setHours(0, 0, 0, 0);
+
+      // Label calculation (still based on calendar days for display)
       const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
       const startOfCloseDay = new Date(closeDate.getFullYear(), closeDate.getMonth(), closeDate.getDate()).getTime();
       const dayDelta = Math.round((startOfCloseDay - startOfToday) / (1000 * 60 * 60 * 24));
 
       let label;
-      if (dayDelta <= 0) {
-        label = 'HOY';
-      } else if (dayDelta === 1) {
-        label = 'MAÑANA';
-      } else {
-        label = `${dayDelta} días`;
-      }
+      if (dayDelta <= 0) label = 'HOY';
+      else if (dayDelta === 1) label = 'MAÑANA';
+      else label = `${dayDelta} días`;
 
-      if (diffHours <= 24) {
-        return { color: '#e74c3c', label };
+      // Color based on exact closing time
+      if (closeDate <= tomorrowNoon) {
+        return { color: '#e74c3c', label }; // red: closes today or before tomorrow noon
       }
-      if (diffHours <= 72) {
-        return { color: '#f1c40f', label };
+      if (closeDate < dayAfterTomorrowStart) {
+        return { color: '#f1c40f', label }; // yellow: closes tomorrow after noon
       }
-      return { color: '#2ecc71', label };
+      return { color: '#2ecc71', label }; // green: closes day after tomorrow or later
     }
 
     function getReliabilityColor(label) {
