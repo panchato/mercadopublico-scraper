@@ -43,6 +43,7 @@ function getHoursLeft(tokenState) {
 }
 
 app.use(express.static(PUBLIC_DIR));
+app.get('/GUIA.md', (req, res) => res.sendFile(path.join(__dirname, 'GUIA.md')));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
