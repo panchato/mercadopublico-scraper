@@ -5,6 +5,9 @@ const { getValidToken, TokenExpiredError } = require('./token-manager');
 
 const BASE_URL = 'https://servicios-compra-agil.mercadopublico.cl';
 const DETAIL_ENDPOINT_BASE = '/v1/compra-agil/solicitud';
+const BUYER_BASE_URL = 'https://comprador-api-pro.mercadopublico.cl';
+const BUYER_RECLAMOS_PATH = '/comprador/reclamos/calculos_reclamos';
+const BUYER_MONTOS_PATH = '/comprador/orden_compra/montos';
 
 function parseClosingDate(value) {
   if (!value || typeof value !== 'string') return null;
@@ -36,6 +39,117 @@ function shouldEnrich(opportunity, nowMs) {
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function requestJson(url, headers, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const req = https.get(url, { method: 'GET', headers }, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      res.on('end', () => {
+        if (settled) return;
+        settled = true;
+
+        if (res.statusCode === 200) {
+          try {
+            resolve(JSON.parse(data));
+          } catch (error) {
+            reject(new Error(`Failed to parse JSON from ${url}: ${error.message}`));
+          }
+          return;
+        }
+
+        reject(new Error(`HTTP ${res.statusCode} from ${url}: ${data.substring(0, 200)}`));
+      });
+    });
+
+    req.setTimeout(timeoutMs, () => {
+      const timeoutError = new Error(`Request timed out after ${Math.floor(timeoutMs / 1000)}s`);
+      timeoutError.code = 'ETIMEDOUT';
+      req.destroy(timeoutError);
+    });
+
+    req.on('error', (error) => {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    });
+  });
+}
+
+function getBuyerScore(ratio) {
+  if (ratio <= 0.02) return 25;
+  if (ratio <= 0.05) return 18;
+  if (ratio <= 0.10) return 10;
+  if (ratio <= 0.20) return 5;
+  return 0;
+}
+
+function getBuyerLabel(score) {
+  if (score === 25) return 'Muy confiable';
+  if (score === 18) return 'Confiable';
+  if (score === 10) return 'Precaución';
+  if (score === 5) return 'Riesgo';
+  return 'Evitar';
+}
+
+function toSafeNumber(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+async function fetchBuyerReliability(rut, bearerToken) {
+  if (!rut || !String(rut).trim()) {
+    return null;
+  }
+
+  const normalizedRut = String(rut).trim();
+  const headers = {
+    Authorization: `Bearer ${bearerToken}`,
+    Accept: 'application/json',
+    Origin: 'https://comprador.mercadopublico.cl'
+  };
+
+  const reclamosUrl = `${BUYER_BASE_URL}${BUYER_RECLAMOS_PATH}?rut=${encodeURIComponent(normalizedRut)}`;
+  const montosUrl = `${BUYER_BASE_URL}${BUYER_MONTOS_PATH}?rut=${encodeURIComponent(normalizedRut)}`;
+
+  const [reclamosResult, montosResult] = await Promise.allSettled([
+    requestJson(reclamosUrl, headers, 10000),
+    requestJson(montosUrl, headers, 10000)
+  ]);
+
+  if (reclamosResult.status !== 'fulfilled' || montosResult.status !== 'fulfilled') {
+    return null;
+  }
+
+  const reclamosData = Array.isArray(reclamosResult.value?.payload?.data)
+    ? reclamosResult.value.payload.data
+    : [];
+  const montosData = Array.isArray(montosResult.value?.payload?.data)
+    ? montosResult.value.payload.data
+    : [];
+
+  const pagoNoOportunoItem = reclamosData.find((item) => Number(item?.tipoReclamoId) === 1);
+  const pagoNoOportuno = toSafeNumber(pagoNoOportunoItem?.cantidadReclamos);
+  const totalOrdenes = montosData.reduce((sum, item) => sum + toSafeNumber(item?.nro_oc), 0);
+  const ratioRaw = totalOrdenes > 0 ? pagoNoOportuno / totalOrdenes : 0;
+  const ratio = Number(ratioRaw.toFixed(3));
+  const ratioPercent = `${(ratioRaw * 100).toFixed(1).replace(/\.0$/, '')}%`;
+  const score = getBuyerScore(ratioRaw);
+  const label = getBuyerLabel(score);
+
+  return {
+    pagoNoOportuno,
+    totalOrdenes,
+    ratio,
+    ratioPercent,
+    score,
+    label
+  };
 }
 
 function requestDetail(codigo, bearerToken, timeoutMs) {
@@ -140,7 +254,7 @@ async function requestDetailWithRetry(codigo, bearerToken, timeoutMs, maxRetries
   throw new Error(`Failed to enrich ${codigo} after retries.`);
 }
 
-function mapDetail(opportunity, detail) {
+function mapDetail(opportunity, detail, buyerReliability) {
   const productos = Array.isArray(detail.productos)
     ? detail.productos.map((producto) => ({
         codigoProducto: producto.codigoProducto,
@@ -160,6 +274,7 @@ function mapDetail(opportunity, detail) {
     organismo: opportunity.organismo,
     montoDisponible: opportunity.montoDisponible,
     fechaCierre: opportunity.fechaCierre,
+    buyerReliability: buyerReliability || null,
     detalle: {
       descripcion: detail.descripcion,
       moneda: detail.moneda,
@@ -186,8 +301,19 @@ async function enrichSingle(opportunity, index, total, bearerToken, timeoutMs, m
       throw new Error(`Missing payload.detalleSolicitud for ${codigo}`);
     }
 
+    const buyerRut = detail?.institucion?.rut;
+    let buyerReliability = null;
+    if (!buyerRut) {
+      console.log(`[buyer] ${codigo} no RUT, skipping`);
+    } else {
+      buyerReliability = await fetchBuyerReliability(buyerRut, bearerToken);
+      if (buyerReliability) {
+        console.log(`[buyer] ${codigo} reliability: ${buyerReliability.label} (${buyerReliability.ratioPercent})`);
+      }
+    }
+
     console.log(`   [${index}/${total}] ${codigo} with ✅ enriched`);
-    return mapDetail(opportunity, detail);
+    return mapDetail(opportunity, detail, buyerReliability);
   } catch (error) {
     console.warn(`⚠️  Skipping ${codigo} after retries: ${error.message}`);
     console.log(`   [${index}/${total}] ${codigo} with ⚠️ skipped`);
