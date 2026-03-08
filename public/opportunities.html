@@ -31,8 +31,120 @@
     }
 
     .container {
-      width: min(1200px, 95vw);
+      width: min(1280px, 95vw);
       margin: 22px auto 34px;
+    }
+
+    .layout {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    .sidebar {
+      width: 280px;
+      flex: 0 0 280px;
+      position: sticky;
+      top: 80px;
+      align-self: flex-start;
+    }
+
+    .sidebar-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.24);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sidebar-title {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .sort-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sort-btn {
+      width: 100%;
+      border-radius: 8px;
+      padding: 8px 12px;
+      text-align: left;
+      color: var(--text);
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.06);
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .sort-btn.active {
+      background: var(--highlight);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .range-label {
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .range-input {
+      width: 100%;
+      accent-color: var(--highlight);
+    }
+
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.88rem;
+      color: var(--text);
+    }
+
+    .check-row input {
+      margin: 0;
+      accent-color: var(--highlight);
+    }
+
+    .check-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .reset-btn {
+      border-radius: 8px;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.88rem;
+    }
+
+    .reset-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .main-column {
+      flex: 1;
+      min-width: 0;
     }
 
     .header {
@@ -41,7 +153,16 @@
       justify-content: space-between;
       gap: 12px;
       flex-wrap: wrap;
-      margin-bottom: 14px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      padding: 16px 0 8px;
+      margin-bottom: 12px;
+    }
+
+    .header.scrolled {
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
     }
 
     h1 {
@@ -74,22 +195,32 @@
     }
 
     .search-wrap {
-      margin-bottom: 16px;
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      opacity: 0.9;
     }
 
     .search-input {
       width: 100%;
       background: #111a36;
       color: var(--text);
-      border: 1px solid var(--border);
+      border: 1px solid rgba(233, 69, 96, 0.4);
       border-radius: 10px;
-      padding: 11px 12px;
+      padding: 14px 16px 14px 38px;
       font-size: 0.95rem;
       outline: none;
     }
 
     .search-input:focus {
-      border-color: rgba(233, 69, 96, 0.65);
+      border-color: rgba(233, 69, 96, 0.75);
       box-shadow: 0 0 0 2px rgba(233, 69, 96, 0.2);
     }
 
@@ -307,25 +438,79 @@
     .hidden {
       display: none;
     }
+
+    @media (max-width: 767px) {
+      .layout {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        flex: 1 1 auto;
+        position: static;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <header class="header">
-      <div>
-        <h1>Oportunidades Compra Ágil</h1>
-        <p class="subtitle" id="subtitle">0 oportunidades · fuente: sin datos</p>
-      </div>
-      <a class="btn" href="/">← Panel técnico</a>
-    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-panel">
+          <section class="sidebar-section">
+            <h2 class="sidebar-title">Ordenar por</h2>
+            <div class="sort-group">
+              <button type="button" class="sort-btn active" data-sort="urgency">⏳ Caducidad</button>
+              <button type="button" class="sort-btn" data-sort="amount">💰 Monto</button>
+              <button type="button" class="sort-btn" data-sort="reliability">🏦 Confiabilidad</button>
+            </div>
+          </section>
 
-    <div class="search-wrap">
-      <input id="searchInput" class="search-input" type="text" placeholder="Buscar por nombre u organismo...">
+          <section class="sidebar-section">
+            <h2 class="sidebar-title">Rango de monto</h2>
+            <div>
+              <div class="range-label" id="montoMinLabel">Desde: CLP 0</div>
+              <input id="montoMinInput" class="range-input" type="range" min="0" max="7000000" step="100000" value="0">
+            </div>
+            <div>
+              <div class="range-label" id="montoMaxLabel">Hasta: CLP 7.000.000</div>
+              <input id="montoMaxInput" class="range-input" type="range" min="0" max="7000000" step="100000" value="7000000">
+            </div>
+          </section>
+
+          <section class="sidebar-section">
+            <h2 class="sidebar-title">Confiabilidad del comprador</h2>
+            <label class="check-row"><input type="checkbox" class="reliability-check" value="Muy confiable" checked><span class="check-dot" style="background:#2ecc71"></span>Muy confiable</label>
+            <label class="check-row"><input type="checkbox" class="reliability-check" value="Confiable" checked><span class="check-dot" style="background:#2ecc71"></span>Confiable</label>
+            <label class="check-row"><input type="checkbox" class="reliability-check" value="Precaución" checked><span class="check-dot" style="background:#f1c40f"></span>Precaución</label>
+            <label class="check-row"><input type="checkbox" class="reliability-check" value="Riesgo" checked><span class="check-dot" style="background:#e74c3c"></span>Riesgo</label>
+            <label class="check-row"><input type="checkbox" class="reliability-check" value="Evitar" checked><span class="check-dot" style="background:#e74c3c"></span>Evitar</label>
+            <label class="check-row"><input type="checkbox" class="reliability-check" value="Sin datos" checked><span class="check-dot" style="background:#9fa8c3"></span>Sin datos</label>
+          </section>
+
+          <button id="resetFiltersBtn" type="button" class="reset-btn">Restablecer filtros</button>
+        </div>
+      </aside>
+
+      <main class="main-column">
+        <header class="header" id="stickyHeader">
+          <div>
+            <h1>Oportunidades Compra Ágil</h1>
+            <p class="subtitle" id="subtitle">0 de 0 oportunidades · fuente: sin datos</p>
+          </div>
+          <a class="btn" href="/">← Panel técnico</a>
+        </header>
+
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input id="searchInput" class="search-input" type="text" placeholder="Buscar por nombre u organismo...">
+        </div>
+
+        <div id="resultsGrid" class="grid"></div>
+        <div id="noResults" class="empty-message hidden">No hay resultados para tu búsqueda</div>
+        <div id="emptyState" class="empty-message hidden">No hay oportunidades disponibles. Ejecuta el scraper desde el panel técnico.</div>
+      </main>
     </div>
-
-    <div id="resultsGrid" class="grid"></div>
-    <div id="noResults" class="empty-message hidden">No hay resultados para tu búsqueda</div>
-    <div id="emptyState" class="empty-message hidden">No hay oportunidades disponibles. Ejecuta el scraper desde el panel técnico.</div>
   </div>
 
   <script>
@@ -334,8 +519,25 @@
     const resultsGridEl = document.getElementById('resultsGrid');
     const noResultsEl = document.getElementById('noResults');
     const emptyStateEl = document.getElementById('emptyState');
+    const stickyHeaderEl = document.getElementById('stickyHeader');
+    const sortButtons = Array.from(document.querySelectorAll('.sort-btn'));
+    const montoMinInputEl = document.getElementById('montoMinInput');
+    const montoMaxInputEl = document.getElementById('montoMaxInput');
+    const montoMinLabelEl = document.getElementById('montoMinLabel');
+    const montoMaxLabelEl = document.getElementById('montoMaxLabel');
+    const reliabilityCheckboxEls = Array.from(document.querySelectorAll('.reliability-check'));
+    const resetFiltersBtnEl = document.getElementById('resetFiltersBtn');
 
     let allOpportunities = [];
+    let sourceName = 'sin archivo';
+
+    const state = {
+      sortBy: 'urgency',
+      montoMin: 0,
+      montoMax: 7000000,
+      searchTerm: '',
+      reliabilityLabels: new Set(['Muy confiable', 'Confiable', 'Precaución', 'Riesgo', 'Evitar', 'Sin datos'])
+    };
 
     function parseDate(value) {
       if (!value) return null;
@@ -539,50 +741,168 @@
 
     function renderCards(opportunities) {
       resultsGridEl.innerHTML = '';
-      if (!opportunities.length) {
+      for (const opportunity of opportunities) {
+        resultsGridEl.appendChild(renderOpportunityCard(opportunity));
+      }
+    }
+
+    function getClosingTimestamp(opportunity) {
+      const parsed = parseDate(opportunity?.fechaCierre);
+      return parsed ? parsed.getTime() : null;
+    }
+
+    function updateSubtitle(filteredCount) {
+      subtitleEl.textContent = `${filteredCount} de ${allOpportunities.length} oportunidades · fuente: ${sourceName}`;
+    }
+
+    function updateMontoLabels() {
+      montoMinLabelEl.textContent = `Desde: ${formatMoney(state.montoMin)}`;
+      montoMaxLabelEl.textContent = `Hasta: ${formatMoney(state.montoMax)}`;
+    }
+
+    function updateSortButtons() {
+      for (const btn of sortButtons) {
+        btn.classList.toggle('active', btn.dataset.sort === state.sortBy);
+      }
+    }
+
+    function applyFiltersAndSort() {
+      const filtered = allOpportunities.filter((opportunity) => {
+        const nombre = String(opportunity?.nombre || '');
+        const organismo = String(opportunity?.organismo || opportunity?.institucion?.empresa || '');
+        const haystack = `${nombre} ${organismo}`.toLowerCase();
+        const searchMatch = !state.searchTerm || haystack.includes(state.searchTerm);
+
+        const montoDisponible = Number(opportunity?.montoDisponible ?? opportunity?.detalle?.montoMoneda ?? opportunity?.montoMoneda ?? 0);
+        const safeMonto = Number.isFinite(montoDisponible) ? montoDisponible : 0;
+        const montoMatch = safeMonto >= state.montoMin && safeMonto <= state.montoMax;
+
+        const reliabilityLabel = opportunity?.buyerReliability?.label || 'Sin datos';
+        const reliabilityMatch = state.reliabilityLabels.has(reliabilityLabel);
+
+        return searchMatch && montoMatch && reliabilityMatch;
+      });
+
+      filtered.sort((a, b) => {
+        if (state.sortBy === 'amount') {
+          const aMonto = Number(a?.montoDisponible ?? a?.detalle?.montoMoneda ?? a?.montoMoneda ?? 0) || 0;
+          const bMonto = Number(b?.montoDisponible ?? b?.detalle?.montoMoneda ?? b?.montoMoneda ?? 0) || 0;
+          return bMonto - aMonto;
+        }
+
+        if (state.sortBy === 'reliability') {
+          const aScore = Number(a?.buyerReliability?.score ?? -1);
+          const bScore = Number(b?.buyerReliability?.score ?? -1);
+          if (bScore !== aScore) return bScore - aScore;
+        }
+
+        const aTs = getClosingTimestamp(a);
+        const bTs = getClosingTimestamp(b);
+        if (aTs === null && bTs === null) return 0;
+        if (aTs === null) return 1;
+        if (bTs === null) return -1;
+        return aTs - bTs;
+      });
+
+      renderCards(filtered);
+      updateSubtitle(filtered.length);
+
+      if (allOpportunities.length === 0) {
         noResultsEl.classList.add('hidden');
         emptyStateEl.classList.remove('hidden');
         return;
       }
 
       emptyStateEl.classList.add('hidden');
-      for (const opportunity of opportunities) {
-        resultsGridEl.appendChild(renderOpportunityCard(opportunity));
-      }
+      noResultsEl.classList.toggle('hidden', filtered.length > 0);
     }
 
-    function applyFilter() {
-      const term = searchInputEl.value.trim().toLowerCase();
-      const cards = Array.from(resultsGridEl.querySelectorAll('.card'));
-      let visibleCount = 0;
+    function resetFilters() {
+      state.sortBy = 'urgency';
+      state.montoMin = 0;
+      state.montoMax = 7000000;
+      state.searchTerm = '';
+      state.reliabilityLabels = new Set(['Muy confiable', 'Confiable', 'Precaución', 'Riesgo', 'Evitar', 'Sin datos']);
 
-      for (const card of cards) {
-        const matches = !term || card.dataset.search.includes(term);
-        card.style.display = matches ? '' : 'none';
-        if (matches) visibleCount += 1;
+      searchInputEl.value = '';
+      montoMinInputEl.value = String(state.montoMin);
+      montoMaxInputEl.value = String(state.montoMax);
+      updateMontoLabels();
+      updateSortButtons();
+
+      for (const checkbox of reliabilityCheckboxEls) {
+        checkbox.checked = true;
       }
 
-      noResultsEl.classList.toggle('hidden', visibleCount > 0 || cards.length === 0);
+      applyFiltersAndSort();
     }
 
     async function loadOpportunities() {
       try {
         const response = await fetch('/api/opportunities/latest');
         const data = await response.json();
-        const opportunities = Array.isArray(data?.opportunities) ? data.opportunities : [];
-        const source = data?.source || 'sin archivo';
-
-        allOpportunities = opportunities;
-        subtitleEl.textContent = `${opportunities.length} oportunidades · fuente: ${source}`;
-        renderCards(opportunities);
+        allOpportunities = Array.isArray(data?.opportunities) ? data.opportunities : [];
+        sourceName = data?.source || 'sin archivo';
       } catch (error) {
         allOpportunities = [];
-        subtitleEl.textContent = '0 oportunidades · fuente: error de carga';
-        renderCards([]);
+        sourceName = 'error de carga';
       }
+
+      applyFiltersAndSort();
     }
 
-    searchInputEl.addEventListener('input', applyFilter);
+    window.addEventListener('scroll', () => {
+      stickyHeaderEl.classList.toggle('scrolled', window.scrollY > 2);
+    });
+
+    for (const btn of sortButtons) {
+      btn.addEventListener('click', () => {
+        state.sortBy = btn.dataset.sort;
+        updateSortButtons();
+        applyFiltersAndSort();
+      });
+    }
+
+    montoMinInputEl.addEventListener('input', () => {
+      state.montoMin = Number(montoMinInputEl.value);
+      if (state.montoMin > state.montoMax) {
+        state.montoMax = state.montoMin;
+        montoMaxInputEl.value = String(state.montoMax);
+      }
+      updateMontoLabels();
+      applyFiltersAndSort();
+    });
+
+    montoMaxInputEl.addEventListener('input', () => {
+      state.montoMax = Number(montoMaxInputEl.value);
+      if (state.montoMax < state.montoMin) {
+        state.montoMin = state.montoMax;
+        montoMinInputEl.value = String(state.montoMin);
+      }
+      updateMontoLabels();
+      applyFiltersAndSort();
+    });
+
+    for (const checkbox of reliabilityCheckboxEls) {
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) {
+          state.reliabilityLabels.add(checkbox.value);
+        } else {
+          state.reliabilityLabels.delete(checkbox.value);
+        }
+        applyFiltersAndSort();
+      });
+    }
+
+    searchInputEl.addEventListener('input', () => {
+      state.searchTerm = searchInputEl.value.trim().toLowerCase();
+      applyFiltersAndSort();
+    });
+
+    resetFiltersBtnEl.addEventListener('click', resetFilters);
+
+    updateMontoLabels();
+    updateSortButtons();
     loadOpportunities();
   </script>
 </body>
