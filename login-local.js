@@ -56,7 +56,18 @@ async function main() {
     refreshExpiresIn: null
   };
 
-  const browser = await chromium.launch({ headless: false });
+  let browser;
+  try {
+    browser = await chromium.launch({ headless: false, channel: 'msedge' });
+  } catch {
+    try {
+      browser = await chromium.launch({ headless: false, channel: 'chrome' });
+    } catch {
+      throw new Error(
+        'No se encontró Microsoft Edge ni Google Chrome. Por favor instala uno de los dos e intenta nuevamente.'
+      );
+    }
+  }
   const context = await browser.newContext();
   const page = await context.newPage();
 
