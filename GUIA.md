@@ -5,6 +5,7 @@ Esta aplicación monitorea oportunidades de compra del Estado de Chile en Compra
 
 ## Requisitos previos
 - Node.js instalado (descargar desde https://nodejs.org)
+- Microsoft Edge o Google Chrome instalado (Edge viene preinstalado en Windows 10/11)
 - Acceso a internet
 - Cuenta activa en Mercado Público como proveedor
 
