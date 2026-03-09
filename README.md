@@ -12,6 +12,7 @@ Herramienta para monitorear y evaluar oportunidades de compra pública en [Compr
 ## Requisitos
 
 - Node.js 18+
+- Microsoft Edge o Google Chrome (para re-autenticación con Clave Única)
 - Cuenta activa en [Mercado Público](https://www.mercadopublico.cl) como proveedor
 
 ## Instalación
